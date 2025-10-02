@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VRPADevice, PingHistory, TeamMember } from '@/types/vrpa';
-import { simulatePing } from '@/lib/vrpa-utils';
 import { devicesAPI, teamMembersAPI, pingHistoryAPI } from '@/lib/api';
 
 export function useVRPADevices() {
@@ -46,23 +45,33 @@ export function useVRPADevices() {
   // Ping monitoring function
   const pingDevice = useCallback(async (device: VRPADevice) => {
     try {
-      const result = await simulatePing(device.ipAddress);
+      // Call backend API to perform real ping
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/devices/${device.id}/ping`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Ping request failed');
+      }
+
+      const result = await response.json();
+      
       const pingRecord: PingHistory = {
         deviceId: device.id,
-        timestamp: new Date(),
+        timestamp: new Date(result.timestamp),
         status: result.status,
         responseTime: result.responseTime
       };
 
-      // Save ping record to API
-      await pingHistoryAPI.create(pingRecord);
-      
       // Update local state
       setPingHistory(currentHistory => [...(currentHistory || []), pingRecord]);
 
-      // Update device status
-      const updatedDevice = { ...device, status: result.status, updatedAt: new Date() };
-      await devicesAPI.update(device.id, updatedDevice);
+      // Update device status in local state
+      const updatedDevice = { ...device, status: result.status, updatedAt: new Date(result.timestamp) };
       
       setDevices(currentDevices =>
         (currentDevices || []).map(d =>

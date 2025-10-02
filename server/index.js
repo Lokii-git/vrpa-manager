@@ -8,6 +8,10 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('./middleware/auth');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
+const execPromise = promisify(exec);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -278,6 +282,70 @@ app.delete('/api/team-members/:id', authMiddleware, async (req, res) => {
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete team member' });
+  }
+});
+
+// ==================== PING ENDPOINT ====================
+
+// Ping a device (real ICMP ping)
+app.post('/api/devices/:id/ping', authMiddleware, async (req, res) => {
+  try {
+    const devices = await readJSONFile('devices.json');
+    const device = devices.find(d => d.id === req.params.id);
+    
+    if (!device) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    const startTime = Date.now();
+    let status = 'offline';
+    let responseTime = null;
+
+    try {
+      // Use ping command - works on both Linux and Windows
+      // -c 1 = send 1 packet (Linux), -n 1 = send 1 packet (Windows)
+      // -W 2 = timeout 2 seconds (Linux), -w 2000 = timeout 2000ms (Windows)
+      const isWindows = process.platform === 'win32';
+      const pingCmd = isWindows 
+        ? `ping -n 1 -w 2000 ${device.ipAddress}`
+        : `ping -c 1 -W 2 ${device.ipAddress}`;
+
+      await execPromise(pingCmd);
+      
+      // If ping succeeded, calculate response time
+      responseTime = Date.now() - startTime;
+      status = 'online';
+    } catch (error) {
+      // Ping failed - device is offline
+      status = 'offline';
+      responseTime = null;
+    }
+
+    // Update device status
+    device.status = status;
+    device.updatedAt = new Date().toISOString();
+    await writeJSONFile('devices.json', devices);
+
+    // Add to ping history
+    const history = await readJSONFile('ping-history.json');
+    const pingRecord = {
+      deviceId: device.id,
+      timestamp: new Date().toISOString(),
+      status,
+      responseTime
+    };
+    history.push(pingRecord);
+
+    // Keep only last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const filtered = history.filter(p => new Date(p.timestamp) >= thirtyDaysAgo);
+    await writeJSONFile('ping-history.json', filtered);
+
+    res.json({ status, responseTime, timestamp: pingRecord.timestamp });
+  } catch (error) {
+    console.error('Ping error:', error);
+    res.status(500).json({ error: 'Failed to ping device' });
   }
 });
 
