@@ -108,7 +108,6 @@ export function DeviceCard({
             variant="ghost"
             size="sm"
             onClick={() => onEdit(device)}
-            title="Edit device"
             aria-label="Edit device"
           >
             <Gear className="h-4 w-4" />
