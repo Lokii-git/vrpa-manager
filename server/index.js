@@ -285,11 +285,18 @@ app.put('/api/devices/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Device not found' });
     }
     
-    devices[index] = {
+    const updated = {
       ...devices[index],
       ...req.body,
       updatedAt: new Date().toISOString()
     };
+    
+    // Remove nextScheduled if it's explicitly null in the request
+    if (req.body.nextScheduled === null) {
+      delete updated.nextScheduled;
+    }
+    
+    devices[index] = updated;
     
     await writeJSONFile('devices.json', devices);
     console.log(`Device ${req.params.id} updated successfully`);

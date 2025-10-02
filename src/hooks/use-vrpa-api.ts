@@ -241,7 +241,7 @@ export function useVRPADevices() {
 
   const cancelSchedule = useCallback(async (deviceId: string) => {
     await updateDevice(deviceId, {
-      nextScheduled: undefined
+      nextScheduled: null as any
     });
   }, [updateDevice]);
 
