@@ -99,7 +99,7 @@ export function useVRPADevices() {
       (devices || []).forEach(device => {
         pingDevice(device);
       });
-    }, 30000); // Ping every 30 seconds
+    }, 60000); // Ping every 60 seconds
 
     // Initial ping for all devices
     (devices || []).forEach(device => {
