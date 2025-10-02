@@ -239,6 +239,12 @@ export function useVRPADevices() {
     return fullSchedule;
   }, [updateDevice]);
 
+  const cancelSchedule = useCallback(async (deviceId: string) => {
+    await updateDevice(deviceId, {
+      nextScheduled: undefined
+    });
+  }, [updateDevice]);
+
   // Get ping history for a specific device
   const getDevicePingHistory = useCallback((deviceId: string, days: number = 30) => {
     const cutoffDate = new Date();
@@ -305,6 +311,7 @@ export function useVRPADevices() {
     checkoutDevice,
     returnDevice,
     scheduleDevice,
+    cancelSchedule,
     getDevicePingHistory,
     addTeamMember,
     updateTeamMember,

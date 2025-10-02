@@ -43,6 +43,7 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
     checkoutDevice,
     returnDevice,
     scheduleDevice,
+    cancelSchedule,
     getDevicePingHistory,
     addTeamMember,
     updateTeamMember,
@@ -421,6 +422,10 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
             onOpenChange={setHistoryFormOpen}
             device={selectedDevice}
             pingHistory={getDevicePingHistory(selectedDevice.id)}
+            onCancelSchedule={async (deviceId) => {
+              await cancelSchedule(deviceId);
+              toast.success('Schedule cancelled successfully');
+            }}
           />
         </>
       )}

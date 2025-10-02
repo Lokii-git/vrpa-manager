@@ -2,15 +2,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { VRPADevice, PingHistory } from '@/types/vrpa';
 import { generateUptimeHistory, formatUptime } from '@/lib/vrpa-utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { X } from '@phosphor-icons/react';
 
 interface DeviceHistoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device: VRPADevice;
   pingHistory: PingHistory[];
+  onCancelSchedule?: (deviceId: string) => void;
 }
 
-export function DeviceHistory({ open, onOpenChange, device, pingHistory }: DeviceHistoryProps) {
+export function DeviceHistory({ open, onOpenChange, device, pingHistory, onCancelSchedule }: DeviceHistoryProps) {
   const uptimeHistory = generateUptimeHistory(pingHistory);
   
   // Format data for the chart
@@ -204,6 +207,20 @@ export function DeviceHistory({ open, onOpenChange, device, pingHistory }: Devic
               </div>
             ) : device.nextScheduled?.isActive ? (
               <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-semibold text-yellow-500">Scheduled Deployment</h3>
+                  {onCancelSchedule && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onCancelSchedule(device.id)}
+                      className="h-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel Schedule
+                    </Button>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Scheduled for:</span>
