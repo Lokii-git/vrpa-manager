@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { VRPADevice, PingHistory, TeamMember } from '@/types/vrpa';
 import { simulatePing } from '@/lib/vrpa-utils';
 import { devicesAPI, teamMembersAPI, pingHistoryAPI } from '@/lib/api';
@@ -31,6 +31,16 @@ export function useVRPADevices() {
     };
     
     loadData();
+  }, []);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (monitoringIntervalRef.current) {
+        clearInterval(monitoringIntervalRef.current);
+        monitoringIntervalRef.current = null;
+      }
+    };
   }, []);
 
   // Ping monitoring function
@@ -89,31 +99,34 @@ export function useVRPADevices() {
     }
   }, []);
 
+  // Store interval ref
+  const monitoringIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Start monitoring all devices
   const startMonitoring = useCallback(() => {
-    if (isMonitoring) return;
+    if (isMonitoring || monitoringIntervalRef.current) return;
     
     setIsMonitoring(true);
     
-    const monitoringInterval = setInterval(() => {
-      (devices || []).forEach(device => {
-        pingDevice(device);
-      });
-    }, 60000); // Ping every 60 seconds
-
     // Initial ping for all devices
     (devices || []).forEach(device => {
       pingDevice(device);
     });
 
-    return () => {
-      clearInterval(monitoringInterval);
-      setIsMonitoring(false);
-    };
+    // Set up interval
+    monitoringIntervalRef.current = setInterval(() => {
+      (devices || []).forEach(device => {
+        pingDevice(device);
+      });
+    }, 60000); // Ping every 60 seconds
   }, [devices, pingDevice, isMonitoring]);
 
   // Stop monitoring
   const stopMonitoring = useCallback(() => {
+    if (monitoringIntervalRef.current) {
+      clearInterval(monitoringIntervalRef.current);
+      monitoringIntervalRef.current = null;
+    }
     setIsMonitoring(false);
   }, []);
 
