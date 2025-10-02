@@ -148,6 +148,103 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
   }
 });
 
+// ==================== USER MANAGEMENT ENDPOINTS ====================
+
+// Get all users (admin only)
+app.get('/api/users', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const users = await readJSONFile('users.json');
+    // Don't send passwords
+    const sanitizedUsers = users.map(({ password, ...user }) => user);
+    res.json(sanitizedUsers);
+  } catch (error) {
+    console.error('Failed to read users:', error);
+    res.status(500).json({ error: 'Failed to read users' });
+  }
+});
+
+// Create new user (admin only)
+app.post('/api/users', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { username, password, role } = req.body;
+    
+    if (!username || !password || !role) {
+      return res.status(400).json({ error: 'Username, password, and role are required' });
+    }
+    
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+    
+    const users = await readJSONFile('users.json');
+    
+    // Check if username already exists
+    if (users.find(u => u.username === username)) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create new user
+    const newUser = {
+      id: Date.now().toString(),
+      username,
+      password: hashedPassword,
+      role,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    await writeJSONFile('users.json', users);
+    
+    // Return user without password
+    const { password: _, ...sanitizedUser } = newUser;
+    console.log(`User ${username} created successfully`);
+    res.json(sanitizedUser);
+  } catch (error) {
+    console.error('Failed to create user:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    // Can't delete yourself
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    const users = await readJSONFile('users.json');
+    const filtered = users.filter(u => u.id !== req.params.id);
+    
+    if (users.length === filtered.length) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    await writeJSONFile('users.json', filtered);
+    console.log(`User ${req.params.id} deleted successfully`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 // ==================== DEVICES ENDPOINTS ====================
 
 // Get all devices (protected)
