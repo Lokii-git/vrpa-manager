@@ -404,7 +404,7 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
           <CheckoutForm
             open={checkoutFormOpen}
             onOpenChange={setCheckoutFormOpen}
-            device={selectedDevice}
+            device={devices?.find(d => d.id === selectedDevice.id) || selectedDevice}
             teamMembers={teamMembers || []}
             onCheckout={checkoutDevice}
           />
@@ -412,7 +412,7 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
           <ScheduleForm
             open={scheduleFormOpen}
             onOpenChange={setScheduleFormOpen}
-            device={selectedDevice}
+            device={devices?.find(d => d.id === selectedDevice.id) || selectedDevice}
             teamMembers={teamMembers || []}
             onSchedule={scheduleDevice}
           />
@@ -420,11 +420,12 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
           <DeviceHistory
             open={historyFormOpen}
             onOpenChange={setHistoryFormOpen}
-            device={selectedDevice}
+            device={devices?.find(d => d.id === selectedDevice.id) || selectedDevice}
             pingHistory={getDevicePingHistory(selectedDevice.id)}
             onCancelSchedule={async (deviceId) => {
               await cancelSchedule(deviceId);
               toast.success('Schedule cancelled successfully');
+              setHistoryFormOpen(false);
             }}
           />
         </>
