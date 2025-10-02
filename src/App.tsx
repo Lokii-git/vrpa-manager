@@ -72,11 +72,10 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
     }
     
     return () => {
-      if (isMonitoring) {
-        stopMonitoring();
-      }
+      stopMonitoring();
     };
-  }, [devices, isMonitoring, startMonitoring, stopMonitoring]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleCheckout = (device: VRPADevice) => {
     setSelectedDevice(device);
