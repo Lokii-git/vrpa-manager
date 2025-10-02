@@ -50,7 +50,7 @@ export function useVRPADevices() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
         }
       });
 

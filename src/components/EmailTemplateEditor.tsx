@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { FileText, FloppyDisk } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { emailTemplateAPI } from '@/lib/api';
 
 interface EmailTemplateEditorProps {
   onSave: (content: string) => void;
@@ -18,12 +19,7 @@ export function EmailTemplateEditor({ onSave }: EmailTemplateEditorProps) {
     // Load the email template from API
     const loadTemplate = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/email-template`, {
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
+        const data = await emailTemplateAPI.get();
         setContent(data.template);
         setOriginalContent(data.template);
       } catch (err) {
