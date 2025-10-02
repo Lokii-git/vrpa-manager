@@ -322,9 +322,17 @@ app.delete('/api/devices/:id', authMiddleware, async (req, res) => {
 // Get all team members
 app.get('/api/team-members', authMiddleware, async (req, res) => {
   try {
-    const members = await readJSONFile('team-members.json');
+    let members;
+    try {
+      members = await readJSONFile('team-members.json');
+    } catch (readError) {
+      console.log('team-members.json not found, creating empty array');
+      members = [];
+      await writeJSONFile('team-members.json', members);
+    }
     res.json(members);
   } catch (error) {
+    console.error('Failed to read team members:', error);
     res.status(500).json({ error: 'Failed to read team members' });
   }
 });
@@ -332,15 +340,24 @@ app.get('/api/team-members', authMiddleware, async (req, res) => {
 // Add team member
 app.post('/api/team-members', authMiddleware, async (req, res) => {
   try {
-    const members = await readJSONFile('team-members.json');
+    let members;
+    try {
+      members = await readJSONFile('team-members.json');
+    } catch (readError) {
+      console.log('team-members.json not found, creating empty array');
+      members = [];
+    }
+    
     const newMember = {
       ...req.body,
       id: uuidv4()
     };
     members.push(newMember);
     await writeJSONFile('team-members.json', members);
+    console.log(`Team member ${newMember.name} created successfully`);
     res.status(201).json(newMember);
   } catch (error) {
+    console.error('Failed to create team member:', error);
     res.status(500).json({ error: 'Failed to create team member' });
   }
 });
