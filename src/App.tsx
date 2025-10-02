@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVRPADevices } from '@/hooks/use-vrpa-api';
 import { emailTemplateAPI } from '@/lib/api';
 import { DeviceCard } from '@/components/DeviceCard';
@@ -53,6 +54,7 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
   const [historyFormOpen, setHistoryFormOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<VRPADevice | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // Handle email template save
   const handleSaveEmailTemplate = async (content: string) => {
@@ -113,17 +115,25 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  // Statistics
+  // Apply type filter to devices
+  const filteredDevices = devices?.filter(d => 
+    typeFilter === 'all' || d.type === typeFilter
+  ) || [];
+
+  // Statistics (based on filtered devices)
   const stats = {
-    total: devices?.length || 0,
-    online: devices?.filter(d => d.status === 'online').length || 0,
-    checkedOut: devices?.filter(d => d.currentCheckout?.isActive).length || 0,
-    scheduled: devices?.filter(d => d.nextScheduled?.isActive).length || 0
+    total: filteredDevices.length,
+    online: filteredDevices.filter(d => d.status === 'online').length,
+    checkedOut: filteredDevices.filter(d => d.currentCheckout?.isActive).length,
+    scheduled: filteredDevices.filter(d => d.nextScheduled?.isActive).length
   };
 
-  const availableDevices = devices?.filter(d => !d.currentCheckout?.isActive) || [];
-  const checkedOutDevices = devices?.filter(d => d.currentCheckout?.isActive) || [];
-  const scheduledDevices = devices?.filter(d => d.nextScheduled?.isActive) || [];
+  const availableDevices = filteredDevices.filter(d => !d.currentCheckout?.isActive);
+  const checkedOutDevices = filteredDevices.filter(d => d.currentCheckout?.isActive);
+  const scheduledDevices = filteredDevices.filter(d => d.nextScheduled?.isActive);
+
+  // Get unique device types for the dropdown
+  const deviceTypes = Array.from(new Set(devices?.map(d => d.type) || [])).sort();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -229,21 +239,41 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
 
         {/* Device Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
-            <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
-            <TabsTrigger value="checked-out">Checked Out ({checkedOutDevices.length})</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled ({scheduledDevices.length})</TabsTrigger>
-            <TabsTrigger value="admin">
-              <UserGear className="h-4 w-4 mr-2" />
-              Admin
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="grid grid-cols-5">
+              <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
+              <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
+              <TabsTrigger value="checked-out">Checked Out ({checkedOutDevices.length})</TabsTrigger>
+              <TabsTrigger value="scheduled">Scheduled ({scheduledDevices.length})</TabsTrigger>
+              <TabsTrigger value="admin">
+                <UserGear className="h-4 w-4 mr-2" />
+                Admin
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Type Filter Dropdown */}
+            {activeTab !== 'admin' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Filter by type:</span>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {deviceTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
 
           <TabsContent value="all" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {devices && devices.length > 0 ? (
-                devices.map(device => (
+              {filteredDevices && filteredDevices.length > 0 ? (
+                filteredDevices.map(device => (
                   <div key={device.id} className="relative group">
                     <DeviceCard
                       device={device}
@@ -261,7 +291,7 @@ function MainApp({ onLogout }: { onLogout: () => void }) {
                           </Button>
                         }
                         device={device}
-                        devices={devices}
+                        devices={devices || []}
                         onSave={addDevice}
                         onUpdate={updateDevice}
                       />

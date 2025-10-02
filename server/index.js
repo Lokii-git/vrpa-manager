@@ -310,13 +310,16 @@ app.post('/api/devices/:id/ping', authMiddleware, async (req, res) => {
         ? `ping -n 1 -w 2000 ${device.ipAddress}`
         : `ping -c 1 -W 2 ${device.ipAddress}`;
 
-      await execPromise(pingCmd);
+      console.log(`Pinging ${device.name} (${device.ipAddress}) with command: ${pingCmd}`);
+      const { stdout, stderr } = await execPromise(pingCmd);
+      console.log(`Ping result for ${device.name}: stdout=${stdout.substring(0, 100)}, stderr=${stderr}`);
       
       // If ping succeeded, calculate response time
       responseTime = Date.now() - startTime;
       status = 'online';
     } catch (error) {
       // Ping failed - device is offline
+      console.log(`Ping failed for ${device.name} (${device.ipAddress}): ${error.message}`);
       status = 'offline';
       responseTime = null;
     }
