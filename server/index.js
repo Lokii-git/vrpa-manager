@@ -195,8 +195,10 @@ app.put('/api/devices/:id', authMiddleware, async (req, res) => {
     };
     
     await writeJSONFile('devices.json', devices);
+    console.log(`Device ${req.params.id} updated successfully`);
     res.json(devices[index]);
   } catch (error) {
+    console.error('Failed to update device:', error);
     res.status(500).json({ error: 'Failed to update device' });
   }
 });
