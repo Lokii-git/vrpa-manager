@@ -3,17 +3,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useVRPADevices } from '@/hooks/use-vrpa';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useVRPADevices } from '@/hooks/use-vrpa-api';
+import { emailTemplateAPI } from '@/lib/api';
 import { DeviceCard } from '@/components/DeviceCard';
 import { DeviceForm } from '@/components/DeviceForm';
 import { CheckoutForm } from '@/components/CheckoutForm';
 import { ScheduleForm } from '@/components/ScheduleForm';
 import { DeviceHistory } from '@/components/DeviceHistory';
+import { AdminPanel } from '@/components/AdminPanel';
+import { LoginPage } from '@/components/LoginPage';
+import { useAuth } from '@/contexts/AuthContext';
 import { VRPADevice } from '@/types/vrpa';
-import { Plus, Monitor, Users, Calendar, Activity } from '@phosphor-icons/react';
+import { Plus, Monitor, Users, Calendar, Activity, UserGear, SignOut } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
+  const { isAuthenticated, login, logout } = useAuth();
+
+  // If not authenticated, show login page
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} />;
+  }
+
+  return <MainApp onLogout={logout} />;
+}
+
+function MainApp({ onLogout }: { onLogout: () => void }) {
   const {
     devices,
     teamMembers,
@@ -27,13 +43,29 @@ function App() {
     checkoutDevice,
     returnDevice,
     scheduleDevice,
-    getDevicePingHistory
+    getDevicePingHistory,
+    addTeamMember,
+    updateTeamMember,
+    removeTeamMember
   } = useVRPADevices();
 
   const [checkoutFormOpen, setCheckoutFormOpen] = useState(false);
   const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
   const [historyFormOpen, setHistoryFormOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<VRPADevice | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+
+  // Handle email template save
+  const handleSaveEmailTemplate = async (content: string) => {
+    try {
+      await emailTemplateAPI.update(content);
+      toast.success('Email template saved successfully');
+    } catch (error) {
+      toast.error('Failed to save email template');
+      console.error(error);
+    }
+  };
 
   // Start monitoring on component mount
   useEffect(() => {
@@ -42,11 +74,10 @@ function App() {
     }
     
     return () => {
-      if (isMonitoring) {
-        stopMonitoring();
-      }
+      stopMonitoring();
     };
-  }, [devices, isMonitoring, startMonitoring, stopMonitoring]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleCheckout = (device: VRPADevice) => {
     setSelectedDevice(device);
@@ -84,17 +115,25 @@ function App() {
     }
   };
 
-  // Statistics
+  // Apply type filter to devices
+  const filteredDevices = devices?.filter(d => 
+    typeFilter === 'all' || d.type === typeFilter
+  ) || [];
+
+  // Statistics (based on filtered devices)
   const stats = {
-    total: devices?.length || 0,
-    online: devices?.filter(d => d.status === 'online').length || 0,
-    checkedOut: devices?.filter(d => d.currentCheckout?.isActive).length || 0,
-    scheduled: devices?.filter(d => d.nextScheduled?.isActive).length || 0
+    total: filteredDevices.length,
+    online: filteredDevices.filter(d => d.status === 'online').length,
+    checkedOut: filteredDevices.filter(d => d.currentCheckout?.isActive).length,
+    scheduled: filteredDevices.filter(d => d.nextScheduled?.isActive).length
   };
 
-  const availableDevices = devices?.filter(d => !d.currentCheckout?.isActive) || [];
-  const checkedOutDevices = devices?.filter(d => d.currentCheckout?.isActive) || [];
-  const scheduledDevices = devices?.filter(d => d.nextScheduled?.isActive) || [];
+  const availableDevices = filteredDevices.filter(d => !d.currentCheckout?.isActive);
+  const checkedOutDevices = filteredDevices.filter(d => d.currentCheckout?.isActive);
+  const scheduledDevices = filteredDevices.filter(d => d.nextScheduled?.isActive);
+
+  // Get unique device types for the dropdown
+  const deviceTypes = Array.from(new Set(devices?.map(d => d.type) || [])).sort();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -105,7 +144,7 @@ function App() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Monitor className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold">vRPA Management</h1>
+                <h1 className="text-2xl font-bold">Clearwater vRPA Management</h1>
               </div>
               <Badge variant="outline" className="text-xs">
                 {isMonitoring ? 'Monitoring Active' : 'Monitoring Stopped'}
@@ -113,6 +152,14 @@ function App() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={onLogout}
+                size="sm"
+              >
+                <SignOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
               <Button
                 variant={isMonitoring ? "destructive" : "default"}
                 onClick={isMonitoring ? stopMonitoring : startMonitoring}
@@ -132,11 +179,19 @@ function App() {
                 devices={devices || []}
                 onSave={addDevice}
               />
+
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab('admin')}
+                size="sm"
+              >
+                <UserGear className="h-4 w-4 mr-2" />
+                Admin Panel
+              </Button>
             </div>
           </div>
         </div>
       </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-6 py-6">
         {/* Stats Cards */}
@@ -183,18 +238,42 @@ function App() {
         </div>
 
         {/* Device Tabs */}
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
-            <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
-            <TabsTrigger value="checked-out">Checked Out ({checkedOutDevices.length})</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled ({scheduledDevices.length})</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList className="grid grid-cols-5">
+              <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
+              <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
+              <TabsTrigger value="checked-out">Checked Out ({checkedOutDevices.length})</TabsTrigger>
+              <TabsTrigger value="scheduled">Scheduled ({scheduledDevices.length})</TabsTrigger>
+              <TabsTrigger value="admin">
+                <UserGear className="h-4 w-4 mr-2" />
+                Admin
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Type Filter Dropdown */}
+            {activeTab !== 'admin' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Filter by type:</span>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {deviceTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
 
           <TabsContent value="all" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {devices && devices.length > 0 ? (
-                devices.map(device => (
+              {filteredDevices && filteredDevices.length > 0 ? (
+                filteredDevices.map(device => (
                   <div key={device.id} className="relative group">
                     <DeviceCard
                       device={device}
@@ -212,7 +291,7 @@ function App() {
                           </Button>
                         }
                         device={device}
-                        devices={devices}
+                        devices={devices || []}
                         onSave={addDevice}
                         onUpdate={updateDevice}
                       />
@@ -306,9 +385,18 @@ function App() {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="admin" className="space-y-4">
+            <AdminPanel
+              teamMembers={teamMembers || []}
+              onAddUser={addTeamMember}
+              onUpdateUser={updateTeamMember}
+              onRemoveUser={removeTeamMember}
+              onSaveEmailTemplate={handleSaveEmailTemplate}
+            />
+          </TabsContent>
         </Tabs>
       </main>
-
       {/* Dialogs */}
       {selectedDevice && (
         <>

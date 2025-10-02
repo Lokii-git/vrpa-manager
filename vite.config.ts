@@ -22,4 +22,15 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  server: {
+    host: true, // Listen on all addresses, needed for Codespaces
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      }
+    }
+  }
 });
