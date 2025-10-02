@@ -9,8 +9,9 @@ import { DeviceForm } from '@/components/DeviceForm';
 import { CheckoutForm } from '@/components/CheckoutForm';
 import { ScheduleForm } from '@/components/ScheduleForm';
 import { DeviceHistory } from '@/components/DeviceHistory';
+import { AdminPanel } from '@/components/AdminPanel';
 import { VRPADevice } from '@/types/vrpa';
-import { Plus, Monitor, Users, Calendar, Activity } from '@phosphor-icons/react';
+import { Plus, Monitor, Users, Calendar, Activity, UserGear } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
@@ -27,7 +28,10 @@ function App() {
     checkoutDevice,
     returnDevice,
     scheduleDevice,
-    getDevicePingHistory
+    getDevicePingHistory,
+    addTeamMember,
+    updateTeamMember,
+    removeTeamMember
   } = useVRPADevices();
 
   const [checkoutFormOpen, setCheckoutFormOpen] = useState(false);
@@ -184,11 +188,15 @@ function App() {
 
         {/* Device Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
             <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
             <TabsTrigger value="checked-out">Checked Out ({checkedOutDevices.length})</TabsTrigger>
             <TabsTrigger value="scheduled">Scheduled ({scheduledDevices.length})</TabsTrigger>
+            <TabsTrigger value="admin">
+              <UserGear className="h-4 w-4 mr-2" />
+              Admin
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
@@ -305,6 +313,15 @@ function App() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="admin" className="space-y-4">
+            <AdminPanel
+              teamMembers={teamMembers || []}
+              onAddUser={addTeamMember}
+              onUpdateUser={updateTeamMember}
+              onRemoveUser={removeTeamMember}
+            />
           </TabsContent>
         </Tabs>
       </main>

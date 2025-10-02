@@ -212,6 +212,33 @@ export function useVRPADevices() {
     ).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }, [pingHistory]);
 
+  // Team member management functions
+  const addTeamMember = useCallback((memberData: Omit<TeamMember, 'id'>) => {
+    const newMember: TeamMember = {
+      ...memberData,
+      id: generateId()
+    };
+
+    setTeamMembers(currentMembers => [...(currentMembers || []), newMember]);
+    return newMember;
+  }, [setTeamMembers]);
+
+  const updateTeamMember = useCallback((memberId: string, updates: Partial<TeamMember>) => {
+    setTeamMembers(currentMembers =>
+      (currentMembers || []).map(member =>
+        member.id === memberId
+          ? { ...member, ...updates }
+          : member
+      )
+    );
+  }, [setTeamMembers]);
+
+  const removeTeamMember = useCallback((memberId: string) => {
+    setTeamMembers(currentMembers => 
+      (currentMembers || []).filter(member => member.id !== memberId)
+    );
+  }, [setTeamMembers]);
+
   return {
     devices,
     teamMembers,
@@ -226,6 +253,9 @@ export function useVRPADevices() {
     returnDevice,
     scheduleDevice,
     getDevicePingHistory,
-    setTeamMembers
+    setTeamMembers,
+    addTeamMember,
+    updateTeamMember,
+    removeTeamMember
   };
 }
