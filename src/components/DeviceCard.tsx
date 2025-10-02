@@ -56,10 +56,25 @@ export function DeviceCard({
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
+      // Try modern clipboard API first
       await navigator.clipboard.writeText(text);
       toast.success(`${label} copied to clipboard`);
     } catch (err) {
-      toast.error(`Failed to copy ${label}`);
+      // Fallback for HTTP or permission issues
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        toast.success(`${label} copied to clipboard`);
+      } catch (fallbackErr) {
+        console.error('Clipboard copy error:', fallbackErr);
+        toast.error(`Failed to copy ${label}`);
+      }
     }
   };
 
@@ -69,13 +84,7 @@ export function DeviceCard({
       return;
     }
     const populatedTemplate = emailTemplate.replace('[Insert Link Here]', device.sharefileLink);
-    try {
-      await navigator.clipboard.writeText(populatedTemplate);
-      toast.success('Email template copied to clipboard');
-    } catch (err) {
-      console.error('Clipboard copy error:', err);
-      toast.error('Failed to copy email template');
-    }
+    await copyToClipboard(populatedTemplate, 'Email template');
   };
 
   return (
