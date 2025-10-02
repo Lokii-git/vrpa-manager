@@ -3,8 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VRPADevice } from '@/types/vrpa';
 import { getStatusColor, getCheckoutStatusText, isDeviceAvailable } from '@/lib/vrpa-utils';
-import { Monitor, User, Calendar, Eye, EyeSlash, Link, Gear } from '@phosphor-icons/react';
+import { Monitor, User, Calendar, Eye, EyeSlash, Link, Gear, Copy, Envelope } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface DeviceCardProps {
   device: VRPADevice;
@@ -28,6 +29,27 @@ export function DeviceCard({
 
   const isAvailable = isDeviceAvailable(device);
   const statusText = getCheckoutStatusText(device);
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied to clipboard`);
+    } catch (err) {
+      toast.error(`Failed to copy ${label}`);
+    }
+  };
+
+  const copyEmailTemplate = async () => {
+    try {
+      const response = await fetch('/vRPAemail.md');
+      const template = await response.text();
+      const filledTemplate = template.replace('[Insert Link Here]', device.sharefileLink);
+      await navigator.clipboard.writeText(filledTemplate);
+      toast.success('Email template copied to clipboard');
+    } catch (err) {
+      toast.error('Failed to copy email template');
+    }
+  };
 
   return (
     <Card className="device-card">
@@ -67,7 +89,7 @@ export function DeviceCard({
           
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Root Password:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <code className="font-mono bg-muted px-2 py-1 rounded text-xs">
                 {showPassword ? device.rootPassword : '••••••••'}
               </code>
@@ -75,15 +97,24 @@ export function DeviceCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowPassword(!showPassword)}
+                title="Toggle visibility"
               >
                 {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(device.rootPassword, 'Root password')}
+                title="Copy to clipboard"
+              >
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Sharefile:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {showSharefile ? (
                 <a 
                   href={device.sharefileLink} 
@@ -100,8 +131,17 @@ export function DeviceCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSharefile(!showSharefile)}
+                title="Toggle visibility"
               >
                 {showSharefile ? <EyeSlash className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(device.sharefileLink, 'Sharefile link')}
+                title="Copy to clipboard"
+              >
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -112,6 +152,21 @@ export function DeviceCard({
             <User className="h-4 w-4" />
             <span>{statusText}</span>
           </div>
+
+          {/* Show next scheduled info if device is checked out but also scheduled */}
+          {device.currentCheckout?.isActive && device.nextScheduled?.isActive && (
+            <div className="mb-3 p-2 bg-muted rounded-md text-sm">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-1">
+                <Calendar className="h-4 w-4" />
+                <span className="font-medium">Next Scheduled</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <div><strong>User:</strong> {device.nextScheduled.teamMemberName}</div>
+                <div><strong>From:</strong> {new Date(device.nextScheduled.scheduledDate).toLocaleDateString()}</div>
+                <div><strong>To:</strong> {new Date(device.nextScheduled.expectedEndDate).toLocaleDateString()}</div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {isAvailable ? (
@@ -149,6 +204,19 @@ export function DeviceCard({
               size="sm"
             >
               History
+            </Button>
+          </div>
+
+          {/* Copy Email Template Button */}
+          <div className="mt-2 pt-2 border-t">
+            <Button
+              onClick={copyEmailTemplate}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <Envelope className="h-4 w-4 mr-2" />
+              Copy Email Template
             </Button>
           </div>
         </div>
