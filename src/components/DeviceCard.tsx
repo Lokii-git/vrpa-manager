@@ -3,8 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VRPADevice } from '@/types/vrpa';
 import { getStatusColor, getCheckoutStatusText, isDeviceAvailable } from '@/lib/vrpa-utils';
-import { Monitor, User, Calendar, Eye, EyeSlash, Link, Gear } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { Monitor, User, Calendar, Eye, EyeSlash, Link, Gear, Copy, Envelope } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface DeviceCardProps {
   device: VRPADevice;
@@ -25,9 +26,52 @@ export function DeviceCard({
 }: DeviceCardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showSharefile, setShowSharefile] = useState(false);
+  const [emailTemplate, setEmailTemplate] = useState<string>('');
 
   const isAvailable = isDeviceAvailable(device);
   const statusText = getCheckoutStatusText(device);
+
+  // Load email template from API
+  useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/email-template`);
+        const data = await response.json();
+        setEmailTemplate(data.template);
+      } catch (err) {
+        console.error('Failed to load email template:', err);
+        // Fallback to file
+        try {
+          const res = await fetch('/vRPAemail.md');
+          const text = await res.text();
+          setEmailTemplate(text);
+        } catch (fallbackErr) {
+          console.error('Failed to load fallback template:', fallbackErr);
+        }
+      }
+    };
+    
+    loadTemplate();
+  }, []);
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied to clipboard`);
+    } catch (err) {
+      toast.error(`Failed to copy ${label}`);
+    }
+  };
+
+  const copyEmailTemplate = async () => {
+    const populatedTemplate = emailTemplate.replace('[Insert Link Here]', device.sharefileLink);
+    try {
+      await navigator.clipboard.writeText(populatedTemplate);
+      toast.success('Email template copied to clipboard');
+    } catch (err) {
+      toast.error('Failed to copy email template');
+    }
+  };
 
   return (
     <Card className="device-card">
@@ -67,7 +111,7 @@ export function DeviceCard({
           
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Root Password:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <code className="font-mono bg-muted px-2 py-1 rounded text-xs">
                 {showPassword ? device.rootPassword : '••••••••'}
               </code>
@@ -78,18 +122,25 @@ export function DeviceCard({
               >
                 {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(device.rootPassword, 'Root password')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Sharefile:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {showSharefile ? (
                 <a 
                   href={device.sharefileLink} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline text-xs break-all"
+                  className="text-primary hover:underline text-xs break-all max-w-[180px]"
                 >
                   {device.sharefileLink}
                 </a>
@@ -103,6 +154,13 @@ export function DeviceCard({
               >
                 {showSharefile ? <EyeSlash className="h-4 w-4" /> : <Link className="h-4 w-4" />}
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(device.sharefileLink, 'Sharefile link')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -112,6 +170,23 @@ export function DeviceCard({
             <User className="h-4 w-4" />
             <span>{statusText}</span>
           </div>
+
+          {/* Show scheduled info when device is checked out but also scheduled */}
+          {device.currentCheckout?.isActive && device.nextScheduled?.isActive && (
+            <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs">
+              <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 mb-1">
+                <Calendar className="h-3 w-3" />
+                <span className="font-semibold">Next Scheduled:</span>
+              </div>
+              <div className="text-muted-foreground">
+                <div><strong>{device.nextScheduled.teamMemberName}</strong> - {device.nextScheduled.clientName}</div>
+                <div className="flex gap-2 mt-1">
+                  <span>From: {new Date(device.nextScheduled.scheduledDate).toLocaleDateString()}</span>
+                  <span>To: {new Date(device.nextScheduled.expectedEndDate).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {isAvailable ? (
@@ -149,6 +224,20 @@ export function DeviceCard({
               size="sm"
             >
               History
+            </Button>
+          </div>
+
+          {/* Email template copy button */}
+          <div className="mt-2">
+            <Button 
+              onClick={copyEmailTemplate}
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              disabled={!emailTemplate}
+            >
+              <Envelope className="h-4 w-4 mr-2" />
+              Copy Email Template
             </Button>
           </div>
         </div>
