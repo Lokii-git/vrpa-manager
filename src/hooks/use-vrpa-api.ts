@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VRPADevice, PingHistory, TeamMember } from '@/types/vrpa';
 import { devicesAPI, teamMembersAPI, pingHistoryAPI } from '@/lib/api';
+import { generateUUID } from '@/lib/vrpa-utils';
 
 export function useVRPADevices() {
   const [devices, setDevices] = useState<VRPADevice[] | null>(null);
@@ -196,7 +197,7 @@ export function useVRPADevices() {
     
     const fullCheckout = {
       ...checkout,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       deviceId,
       isActive: true
     };
@@ -226,7 +227,7 @@ export function useVRPADevices() {
   const scheduleDevice = useCallback(async (deviceId: string, schedule: Omit<import('@/types/vrpa').ScheduledDeployment, 'id' | 'deviceId' | 'isActive'>) => {
     const fullSchedule = {
       ...schedule,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       deviceId,
       isActive: true
     };
