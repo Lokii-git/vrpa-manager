@@ -1,0 +1,5 @@
+# Server data directory - all JSON files stored here
+devices.json
+team-members.json
+ping-history.json
+email-template.json

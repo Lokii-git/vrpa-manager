@@ -3,18 +3,32 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useVRPADevices } from '@/hooks/use-vrpa';
+import { useVRPADevices } from '@/hooks/use-vrpa-api';
+import { emailTemplateAPI } from '@/lib/api';
 import { DeviceCard } from '@/components/DeviceCard';
 import { DeviceForm } from '@/components/DeviceForm';
 import { CheckoutForm } from '@/components/CheckoutForm';
 import { ScheduleForm } from '@/components/ScheduleForm';
 import { DeviceHistory } from '@/components/DeviceHistory';
 import { AdminPanel } from '@/components/AdminPanel';
+import { LoginPage } from '@/components/LoginPage';
+import { useAuth } from '@/contexts/AuthContext';
 import { VRPADevice } from '@/types/vrpa';
-import { Plus, Monitor, Users, Calendar, Activity, UserGear } from '@phosphor-icons/react';
+import { Plus, Monitor, Users, Calendar, Activity, UserGear, SignOut } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
+  const { isAuthenticated, login, logout } = useAuth();
+
+  // If not authenticated, show login page
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} />;
+  }
+
+  return <MainApp onLogout={logout} />;
+}
+
+function MainApp({ onLogout }: { onLogout: () => void }) {
   const {
     devices,
     teamMembers,
@@ -38,6 +52,18 @@ function App() {
   const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
   const [historyFormOpen, setHistoryFormOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<VRPADevice | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Handle email template save
+  const handleSaveEmailTemplate = async (content: string) => {
+    try {
+      await emailTemplateAPI.update(content);
+      toast.success('Email template saved successfully');
+    } catch (error) {
+      toast.error('Failed to save email template');
+      console.error(error);
+    }
+  };
 
   // Start monitoring on component mount
   useEffect(() => {
@@ -109,7 +135,7 @@ function App() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Monitor className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold">vRPA Management</h1>
+                <h1 className="text-2xl font-bold">Clearwater vRPA Management</h1>
               </div>
               <Badge variant="outline" className="text-xs">
                 {isMonitoring ? 'Monitoring Active' : 'Monitoring Stopped'}
@@ -117,6 +143,14 @@ function App() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={onLogout}
+                size="sm"
+              >
+                <SignOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
               <Button
                 variant={isMonitoring ? "destructive" : "default"}
                 onClick={isMonitoring ? stopMonitoring : startMonitoring}
@@ -136,11 +170,19 @@ function App() {
                 devices={devices || []}
                 onSave={addDevice}
               />
+
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab('admin')}
+                size="sm"
+              >
+                <UserGear className="h-4 w-4 mr-2" />
+                Admin Panel
+              </Button>
             </div>
           </div>
         </div>
       </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-6 py-6">
         {/* Stats Cards */}
@@ -187,7 +229,7 @@ function App() {
         </div>
 
         {/* Device Tabs */}
-        <Tabs defaultValue="all" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All Devices ({stats.total})</TabsTrigger>
             <TabsTrigger value="available">Available ({availableDevices.length})</TabsTrigger>
@@ -321,11 +363,11 @@ function App() {
               onAddUser={addTeamMember}
               onUpdateUser={updateTeamMember}
               onRemoveUser={removeTeamMember}
+              onSaveEmailTemplate={handleSaveEmailTemplate}
             />
           </TabsContent>
         </Tabs>
       </main>
-
       {/* Dialogs */}
       {selectedDevice && (
         <>

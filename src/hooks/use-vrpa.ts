@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useKV } from '@github/spark/hooks';
+import { useLocalStorage } from './use-local-storage';
 import { VRPADevice, PingHistory, DeviceStatus, TeamMember } from '@/types/vrpa';
 import { simulatePing, generateId } from '@/lib/vrpa-utils';
 
 export function useVRPADevices() {
-  const [devices, setDevices] = useKV<VRPADevice[]>('vrpa-devices', []);
-  const [pingHistory, setPingHistory] = useKV<PingHistory[]>('ping-history', []);
-  const [teamMembers, setTeamMembers] = useKV<TeamMember[]>('team-members', []);
+  const [devices, setDevices] = useLocalStorage<VRPADevice[]>('vrpa-devices', []);
+  const [pingHistory, setPingHistory] = useLocalStorage<PingHistory[]>('ping-history', []);
+  const [teamMembers, setTeamMembers] = useLocalStorage<TeamMember[]>('team-members', []);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
   // Initialize with default team members if empty

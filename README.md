@@ -1,23 +1,89 @@
-# ✨ Welcome to Your Spark Template!
-You've just launched your brand-new Spark Template Codespace — everything’s fired up and ready for you to explore, build, and create with Spark!
+# vRPA Manager
 
-This template is your blank canvas. It comes with a minimal setup to help you get started quickly with Spark development.
+A full-stack web application for managing vRPA (virtual RPA) devices with device monitoring, team management, and deployment tracking.
 
-🚀 What's Inside?
-- A clean, minimal Spark environment
-- Pre-configured for local development
-- Ready to scale with your ideas
-  
-🧠 What Can You Do?
+## ✨ Features
 
-Right now, this is just a starting point — the perfect place to begin building and testing your Spark applications.
+- � **Secure Authentication** - JWT-based login system with bcrypt password hashing
+- �🖥️ **Device Management** - Add, edit, and track vRPA devices
+- 📊 **Real-time Monitoring** - Automated device health checks
+- 👥 **Team Management** - Manage users and access
+- 📅 **Checkout System** - Track device assignments and schedules
+- 📧 **Email Templates** - Customizable deployment email templates
+- 💾 **File-based Storage** - Simple JSON file storage on server
+- 🔒 **Multi-user Ready** - Shared data across all users
 
-🧹 Just Exploring?
-No problem! If you were just checking things out and don’t need to keep this code:
+## 🏗️ Architecture
 
-- Simply delete your Spark.
-- Everything will be cleaned up — no traces left behind.
+**Frontend**: React + TypeScript + Vite + TailwindCSS  
+**Backend**: Node.js + Express  
+**Storage**: JSON files  
+**Server**: Nginx + PM2  
 
-📄 License For Spark Template Resources 
+## 🚀 Quick Start
 
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+See **[QUICK_START_AUTH.md](QUICK_START_AUTH.md)** for complete setup with authentication.
+
+### Default Login Credentials
+- **Username**: `admin`
+- **Password**: `admin`
+
+⚠️ **Change the default password after first login!**
+
+### Development
+
+```bash
+# 1. Install dependencies
+npm install
+cd server && npm install && cd ..
+
+# 2. Start backend
+cd server && npm start
+
+# 3. Start frontend (new terminal)
+npm run dev
+```
+
+## 📦 Deployment
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for complete Ubuntu deployment guide.
+
+### Quick Deploy on Ubuntu:
+
+```bash
+# 1. Run setup script (installs Node.js, Nginx, PM2)
+sudo ./setup-ubuntu.sh
+
+# 2. Copy application files to /opt/vrpa-manager
+
+# 3. Deploy (auto-configures startup on reboot)
+cd /opt/vrpa-manager
+sudo ./deploy.sh
+
+# 4. Configure Nginx (see DEPLOYMENT.md)
+```
+
+**✅ Your app will automatically start on server reboot!**
+
+## 📚 Documentation
+
+- **[QUICK_START_AUTH.md](QUICK_START_AUTH.md)** - Quick start with authentication
+- **[AUTHENTICATION.md](AUTHENTICATION.md)** - Complete authentication system docs
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Ubuntu server deployment
+- **[AUTO_START_GUIDE.md](AUTO_START_GUIDE.md)** - PM2 auto-start configuration
+- **[ADMIN_PANEL_FEATURE.md](ADMIN_PANEL_FEATURE.md)** - Admin panel guide
+- **[server/README.md](server/README.md)** - Backend API docs
+
+## 🔧 Tech Stack
+
+- React 18
+- TypeScript
+- Vite
+- TailwindCSS
+- shadcn/ui components
+- Express.js
+- Phosphor Icons
+
+## 📝 License
+
+MIT License
