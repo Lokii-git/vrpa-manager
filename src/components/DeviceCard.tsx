@@ -64,11 +64,16 @@ export function DeviceCard({
   };
 
   const copyEmailTemplate = async () => {
+    if (!emailTemplate) {
+      toast.error('Email template not loaded yet');
+      return;
+    }
     const populatedTemplate = emailTemplate.replace('[Insert Link Here]', device.sharefileLink);
     try {
       await navigator.clipboard.writeText(populatedTemplate);
       toast.success('Email template copied to clipboard');
     } catch (err) {
+      console.error('Clipboard copy error:', err);
       toast.error('Failed to copy email template');
     }
   };
