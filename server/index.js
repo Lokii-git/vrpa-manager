@@ -361,20 +361,37 @@ async function startServer() {
   
   // Initialize default data files if they don't exist
   try {
-    await readJSONFile('devices.json');
-  } catch {
-    await writeJSONFile('devices.json', []);
+    const devices = await readJSONFile('devices.json');
+    // Only initialize if file doesn't exist or is not an array
+    if (!Array.isArray(devices)) {
+      await writeJSONFile('devices.json', []);
+    }
+  } catch (error) {
+    // Only create file if it truly doesn't exist (ENOENT)
+    if (error.code === 'ENOENT') {
+      await writeJSONFile('devices.json', []);
+    }
   }
   
   try {
-    await readJSONFile('team-members.json');
-  } catch {
-    await writeJSONFile('team-members.json', [
-      { id: uuidv4(), name: 'John Smith', email: 'john.smith@company.com' },
-      { id: uuidv4(), name: 'Sarah Johnson', email: 'sarah.johnson@company.com' },
-      { id: uuidv4(), name: 'Mike Chen', email: 'mike.chen@company.com' },
-      { id: uuidv4(), name: 'Emily Davis', email: 'emily.davis@company.com' }
-    ]);
+    const teamMembers = await readJSONFile('team-members.json');
+    if (!Array.isArray(teamMembers)) {
+      await writeJSONFile('team-members.json', [
+        { id: uuidv4(), name: 'John Smith', email: 'john.smith@company.com' },
+        { id: uuidv4(), name: 'Sarah Johnson', email: 'sarah.johnson@company.com' },
+        { id: uuidv4(), name: 'Mike Chen', email: 'mike.chen@company.com' },
+        { id: uuidv4(), name: 'Emily Davis', email: 'emily.davis@company.com' }
+      ]);
+    }
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await writeJSONFile('team-members.json', [
+        { id: uuidv4(), name: 'John Smith', email: 'john.smith@company.com' },
+        { id: uuidv4(), name: 'Sarah Johnson', email: 'sarah.johnson@company.com' },
+        { id: uuidv4(), name: 'Mike Chen', email: 'mike.chen@company.com' },
+        { id: uuidv4(), name: 'Emily Davis', email: 'emily.davis@company.com' }
+      ]);
+    }
   }
   
   try {
