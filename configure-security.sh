@@ -76,8 +76,8 @@ fi
 # Create backup
 cp data/users.json data/users.json.backup
 
-# Update password in users.json
-node << 'NODEJS'
+# Update password in users.json using node
+node -e "
 const fs = require('fs');
 const newHash = process.argv[1];
 const users = JSON.parse(fs.readFileSync('data/users.json', 'utf8'));
@@ -89,7 +89,7 @@ if (users[0]) {
     console.log('❌ No users found in users.json');
     process.exit(1);
 }
-NODEJS $NEW_HASH
+" "$NEW_HASH"
 
 cd ..
 

@@ -24,11 +24,18 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables (never commit these!)
 .env
-**/agent-eval-report*
-packages
-pids
-.file-manifest
-.devcontainer/
+server/.env
 
+# Runtime files
+pids/
+*.pid
+
+# Spark-specific files (not needed for vRPA Manager)
+.file-manifest
 .spark-workbench-id
+packages/spark-tools/
+
+# Devcontainer (optional - uncomment to include in repo)
+.devcontainer/
