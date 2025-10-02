@@ -359,7 +359,14 @@ app.post('/api/devices/:id/ping', authMiddleware, async (req, res) => {
 // Get ping history (optional: filter by deviceId)
 app.get('/api/ping-history', authMiddleware, async (req, res) => {
   try {
-    let history = await readJSONFile('ping-history.json');
+    let history;
+    try {
+      history = await readJSONFile('ping-history.json');
+    } catch (readError) {
+      console.log('ping-history.json not found, creating empty array');
+      history = [];
+      await writeJSONFile('ping-history.json', history);
+    }
     
     if (req.query.deviceId) {
       history = history.filter(p => p.deviceId === req.query.deviceId);
@@ -373,6 +380,7 @@ app.get('/api/ping-history', authMiddleware, async (req, res) => {
     
     res.json(history);
   } catch (error) {
+    console.error('Failed to read ping history:', error);
     res.status(500).json({ error: 'Failed to read ping history' });
   }
 });
