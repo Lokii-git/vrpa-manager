@@ -25,7 +25,11 @@ export function DeviceHistory({ open, onOpenChange, device, pingHistory }: Devic
 
   const recentHistory = pingHistory
     .filter(ping => ping.deviceId === device.id)
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .sort((a, b) => {
+      const timeA = typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : a.timestamp.getTime();
+      const timeB = typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : b.timestamp.getTime();
+      return timeB - timeA;
+    })
     .slice(0, 20);
 
   const overallUptime = uptimeHistory.length > 0 
