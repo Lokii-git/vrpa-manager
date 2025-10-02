@@ -28,6 +28,12 @@ dist-ssr
 .env
 server/.env
 
+# Sensitive data files (contain passwords, IPs, etc.)
+devices-import.json
+server/data/devices.json
+server/data/ping-history.json
+server/data/users.json
+
 # Runtime files
 pids/
 *.pid
