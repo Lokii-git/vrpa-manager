@@ -18,7 +18,11 @@ export function EmailTemplateEditor({ onSave }: EmailTemplateEditorProps) {
     // Load the email template from API
     const loadTemplate = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/email-template`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/email-template`, {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          }
+        });
         const data = await response.json();
         setContent(data.template);
         setOriginalContent(data.template);
