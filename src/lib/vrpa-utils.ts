@@ -64,7 +64,9 @@ export function groupPingsByDay(pings: PingHistory[]): Map<string, PingHistory[]
   const grouped = new Map<string, PingHistory[]>();
   
   pings.forEach(ping => {
-    const dateKey = ping.timestamp.toISOString().split('T')[0];
+    // Handle both Date objects and ISO string timestamps
+    const timestamp = typeof ping.timestamp === 'string' ? new Date(ping.timestamp) : ping.timestamp;
+    const dateKey = timestamp.toISOString().split('T')[0];
     if (!grouped.has(dateKey)) {
       grouped.set(dateKey, []);
     }
