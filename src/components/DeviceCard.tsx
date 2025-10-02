@@ -6,6 +6,7 @@ import { getStatusColor, getCheckoutStatusText, isDeviceAvailable } from '@/lib/
 import { Monitor, User, Calendar, Eye, EyeSlash, Link, Gear, Copy, Envelope } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { emailTemplateAPI } from '@/lib/api';
 
 interface DeviceCardProps {
   device: VRPADevice;
@@ -35,8 +36,7 @@ export function DeviceCard({
   useEffect(() => {
     const loadTemplate = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/email-template`);
-        const data = await response.json();
+        const data = await emailTemplateAPI.get();
         setEmailTemplate(data.template);
       } catch (err) {
         console.error('Failed to load email template:', err);
