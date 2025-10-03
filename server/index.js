@@ -13,6 +13,21 @@ const { promisify } = require('util');
 
 const execPromise = promisify(exec);
 
+// File write queue to prevent race conditions
+const writeQueues = new Map();
+
+async function queuedWrite(filename, writeFunction) {
+  if (!writeQueues.has(filename)) {
+    writeQueues.set(filename, Promise.resolve());
+  }
+  
+  const previousWrite = writeQueues.get(filename);
+  const currentWrite = previousWrite.then(() => writeFunction());
+  writeQueues.set(filename, currentWrite);
+  
+  return currentWrite;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = path.join(__dirname, 'data');
@@ -47,10 +62,12 @@ async function readJSONFile(filename) {
   }
 }
 
-// Helper function to write JSON file
+// Helper function to write JSON file with queue to prevent race conditions
 async function writeJSONFile(filename, data) {
-  const filePath = path.join(DATA_DIR, filename);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+  return queuedWrite(filename, async () => {
+    const filePath = path.join(DATA_DIR, filename);
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+  });
 }
 
 // ==================== AUTHENTICATION ENDPOINTS ====================
